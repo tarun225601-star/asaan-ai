@@ -358,21 +358,27 @@ class _SolverHomePageState extends State<SolverHomePage> {
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
     );
 
-        final partsList = >[
-      {'text': prompt},
-    ];
-
+            String extraPart = '';
     if (imageFile != null) {
       final bytes = await imageFile.readAsBytes();
-      final Map<String, dynamic> inlineData = {
-        'mime_type': mimeType ?? 'image/jpeg',
-        'data': base64Encode(bytes),
-      };
-      partsList.add({'inline_data': inlineData});
+      final b64 = base64Encode(bytes);
+      final mime = mimeType ?? 'image/jpeg';
+      extraPart =
+          ',{"inline_data":{"mime_type":"$mime","data":"$b64"}}';
     }
 
+    final payload =
+        '{"contents":[{"parts":[{"text":${jsonEncode(prompt)}}$extraPart]}]}';
 
     final response = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': _apiKey,
+      },
+      body: payload,
+    );
+
       uri,
       headers: {
         'Content-Type': 'application/json',
