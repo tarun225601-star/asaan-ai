@@ -1,9 +1,11 @@
 name: Flutter APK Build
+
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,17 +30,33 @@ jobs:
           rm -rf android
           flutter create --project-name aasan_ai --org com.example.aasan_ai --platforms=android .
 
-      - name: Configure AndroidManifest Permissions & Queries
-        run: python3 -c '
-          p = "android/app/src/main/AndroidManifest.xml"
-          with open(p, "r", encoding="utf-8") as f:
-              s = f.read()
-          if "android.permission.RECORD_AUDIO" not in s:
-              s = s.replace("<manifest ", "<manifest ", 1)
-              s = s.replace("<application", "    <uses-permission android:name=\"android.permission.INTERNET\" />\n    <uses-permission android:name=\"android.permission.RECORD_AUDIO\" />\n\n    <queries>\n        <intent>\n            <action android:name=\"android.intent.action.TTS_SERVICE\" />\n        </intent>\n        <intent>\n            <action android:name=\"android.speech.RecognitionService\" />\n        </intent>\n    </queries>\n\n    <application", 1)
-          with open(p, "w", encoding="utf-8") as f:
-              f.write(s)
-        '
+      - name: Configure AndroidManifest
+        run: |
+          python3 - << 'EOF'
+          path = "android/app/src/main/AndroidManifest.xml"
+          with open(path, "r", encoding="utf-8") as f:
+              content = f.read()
+
+          perms = """    <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+              <queries>
+                  <intent>
+                      <action android:name="android.intent.action.TTS_SERVICE" />
+                  </intent>
+                  <intent>
+                      <action android:name="android.speech.RecognitionService" />
+                  </intent>
+              </queries>
+
+              <application"""
+
+          if "android.permission.RECORD_AUDIO" not in content and "<application" in content:
+              content = content.replace("<application", perms, 1)
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(content)
+          EOF
 
       - name: Get Dependencies
         run: flutter pub get
