@@ -1,15 +1,15 @@
-name: samajh_aaya
+name: aasan_ai
 description: Study question solver app with 4 methods, mastery loop, voice, and offline saved questions.
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.12.0
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.6.0
+  http: ^1.2.2
   shared_preferences: ^2.5.6
   flutter_tts: ^4.2.5
   speech_to_text: ^7.5.0
