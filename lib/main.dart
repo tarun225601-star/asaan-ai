@@ -358,13 +358,12 @@ class _SolverHomePageState extends State<SolverHomePage> {
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
     );
 
-            String extraPart = '';
+    String extraPart = '';
     if (imageFile != null) {
       final bytes = await imageFile.readAsBytes();
       final b64 = base64Encode(bytes);
       final mime = mimeType ?? 'image/jpeg';
-      extraPart =
-          ',{"inline_data":{"mime_type":"$mime","data":"$b64"}}';
+      extraPart = ',{"inline_data":{"mime_type":"$mime","data":"$b64"}}';
     }
 
     final payload =
@@ -377,20 +376,6 @@ class _SolverHomePageState extends State<SolverHomePage> {
         'x-goog-api-key': _apiKey,
       },
       body: payload,
-    );
-
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': _apiKey,
-      },
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': partsList,
-          }
-        ]
-      }),
     );
 
     if (response.statusCode != 200) {
