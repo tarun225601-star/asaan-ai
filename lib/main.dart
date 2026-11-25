@@ -358,7 +358,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
     );
 
-    final partsList = [
+        final partsList = >[
       {'text': prompt},
     ];
 
@@ -370,6 +370,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
       };
       partsList.add({'inline_data': inlineData});
     }
+
 
     final response = await http.post(
       uri,
