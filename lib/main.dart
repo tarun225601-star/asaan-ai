@@ -62,6 +62,20 @@ class SolvedItem {
       );
 }
 
+String cleanDisplayText(String raw) {
+  var text = raw;
+  text = text.replaceAll(RegExp(r'```[\s\S]*?```'), '');
+  text = text.replaceAll(RegExp(r'^\s*#{1,6}\s*', multiLine: true), '');
+  text = text.replaceAll(RegExp(r'^\s*>\s*', multiLine: true), '');
+  text = text.replaceAll(RegExp(r'^\s*[-*_]{3,}\s*$', multiLine: true), '');
+  text = text.replaceAll('**', '');
+  text = text.replaceAll('*', '');
+  text = text.replaceAll('`', '');
+  text = text.replaceAll('\$', '');
+  text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+  return text.trim();
+}
+
 class SolverHomePage extends StatefulWidget {
   const SolverHomePage({super.key});
 
@@ -75,6 +89,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
   static const String _keyDate = 'free_quota_date';
   static const String _keyCount = 'free_quota_count';
   static const String _keySaved = 'saved_questions_list';
+  static const String _keyLang = 'selected_lang_mode';
 
   final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
   final TextEditingController _questionController = TextEditingController();
@@ -87,6 +102,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
   bool _isSpeaking = false;
 
   String _apiKey = '';
+  String _langMode = 'hi-IN'; // 'hi-IN', 'en-US', या 'auto'
   int _usedToday = 0;
   bool _isLoading = false;
 
@@ -104,7 +120,6 @@ class _SolverHomePageState extends State<SolverHomePage> {
   }
 
   Future<void> _initTts() async {
-    // Android पर Google TTS इंजन को प्राथमिकता देने का प्रयास (उपलब्ध होने पर)
     try {
       final engines = await _tts.getEngines;
       if (engines is List) {
@@ -118,9 +133,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
       }
     } catch (_) {}
 
-    await _tts.setLanguage('hi-IN');
-    await _tts.setSpeechRate(0.95);
-    await _tts.setPitch(1.0);
+    await _applyTtsSettings();
 
     _tts.setCompletionHandler(() {
       if (mounted) setState(() => _isSpeaking = false);
@@ -128,6 +141,25 @@ class _SolverHomePageState extends State<SolverHomePage> {
     _tts.setErrorHandler((_) {
       if (mounted) setState(() => _isSpeaking = false);
     });
+  }
+
+  Future<void> _applyTtsSettings({String? overrideLang}) async {
+    final targetLang = overrideLang ?? (_langMode == 'auto' ? 'hi-IN' : _langMode);
+    try {
+      await _tts.setLanguage(targetLang);
+    } catch (_) {
+      await _tts.setLanguage('hi-IN');
+    }
+    await _tts.setSpeechRate(0.30);
+    await _tts.setPitch(1.0);
+  }
+
+  String _detectLanguageForText(String text) {
+    if (_langMode == 'hi-IN' || _langMode == 'en-US') {
+      return _langMode;
+    }
+    final hasDevanagari = RegExp(r'[\u0900-\u097F]').hasMatch(text);
+    return hasDevanagari ? 'hi-IN' : 'en-US';
   }
 
   Future<void> _toggleListen() async {
@@ -158,6 +190,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
 
     setState(() => _isListening = true);
     await _speech.listen(
+      localeId: _langMode == 'auto' ? null : _langMode,
       onResult: (result) {
         setState(() {
           _questionController.text = result.recognizedWords;
@@ -177,6 +210,8 @@ class _SolverHomePageState extends State<SolverHomePage> {
       await _tts.stop();
       setState(() => _isSpeaking = false);
     } else {
+      final langToUse = _detectLanguageForText('$fullText ${_currentQuestion ?? ''}');
+      await _applyTtsSettings(overrideLang: langToUse);
       setState(() => _isSpeaking = true);
       await _tts.speak(fullText);
     }
@@ -184,9 +219,9 @@ class _SolverHomePageState extends State<SolverHomePage> {
 
   String _buildSpokenText() {
     if (_currentAnswer == null) return '';
-    final buffer = StringBuffer(_currentAnswer!);
+    final buffer = StringBuffer(cleanDisplayText(_currentAnswer!));
     for (int i = 0; i < _extraMethods.length; i++) {
-      buffer.write('\n\nअतिरिक्त तरीका ${i + 5}: ${_extraMethods[i]}');
+      buffer.write('\n\n${cleanDisplayText(_extraMethods[i])}');
     }
     return buffer.toString();
   }
@@ -200,6 +235,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
 
   Future<void> _loadState() async {
     final savedKey = await _prefs.getString(_keyApi) ?? '';
+    final savedLang = await _prefs.getString(_keyLang) ?? 'hi-IN';
     final today = _todayKey();
     final lastDate = await _prefs.getString(_keyDate) ?? today;
     int count = await _prefs.getInt(_keyCount) ?? 0;
@@ -212,15 +248,32 @@ class _SolverHomePageState extends State<SolverHomePage> {
 
     final rawList = await _prefs.getStringList(_keySaved) ?? [];
     final parsed = rawList
-        .map((e) => SolvedItem.fromJson(jsonDecode(e) as Map<String, dynamic>))
+        .map((e) {
+          final item = SolvedItem.fromJson(jsonDecode(e) as Map<String, dynamic>);
+          return SolvedItem(
+            question: cleanDisplayText(item.question),
+            answerText: cleanDisplayText(item.answerText),
+            extraMethods: item.extraMethods.map(cleanDisplayText).toList(),
+            understood: item.understood,
+            date: item.date,
+          );
+        })
         .toList();
 
     setState(() {
       _apiKey = savedKey;
       _apiKeyController.text = savedKey;
+      _langMode = savedLang;
       _usedToday = count;
       _savedItems = parsed;
     });
+    await _applyTtsSettings();
+  }
+
+  Future<void> _changeLangMode(String mode) async {
+    await _prefs.setString(_keyLang, mode);
+    setState(() => _langMode = mode);
+    await _applyTtsSettings();
   }
 
   Future<void> _saveApiKey() async {
@@ -231,6 +284,16 @@ class _SolverHomePageState extends State<SolverHomePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('API Key सेव हो गई।')),
     );
+  }
+
+  String _buildLanguageInstruction(String question) {
+    if (_langMode == 'en-US') {
+      return 'Respond in simple, clear English suitable for both children and elders worldwide.';
+    }
+    if (_langMode == 'auto') {
+      return 'Reply in the same language the user asked in (Hindi, English, or any global language), keeping words simple and clear for all ages.';
+    }
+    return 'सवाल जिस भी भाषा में हो, जवाब आसान बोलचाल की हिंदी में दो ताकि बच्चा हो या बूढ़ा, हर कोई एक बार में समझ जाए।';
   }
 
   Future<String> _callGemini(String prompt) async {
@@ -276,7 +339,8 @@ class _SolverHomePageState extends State<SolverHomePage> {
         .join('\n')
         .trim();
 
-    return text.isEmpty ? 'खाली जवाब आया।' : text;
+    final cleaned = cleanDisplayText(text);
+    return cleaned.isEmpty ? 'जवाब तैयार नहीं हो सका, दोबारा पूछें।' : cleaned;
   }
 
   Future<void> _solveQuestion() async {
@@ -292,7 +356,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
         builder: (ctx) => AlertDialog(
           title: const Text('आज के 5 फ़्री सवाल पूरे'),
           content: const Text(
-            'दिन के 5 फ़्री सवाल पूरे हो गए हैं। आगे बढ़ने के लिए अपनी Gemini API Key डालें या पेड/अनलॉक विकल्प चुनें।',
+            'दिन के 5 फ़्री सवाल पूरे हो गए हैं। आगे बढ़ने के लिए अपनी Gemini API Key डालें या अनलॉक विकल्प चुनें।',
           ),
           actions: [
             TextButton(
@@ -313,14 +377,17 @@ class _SolverHomePageState extends State<SolverHomePage> {
       _understood = null;
     });
 
+    final langRule = _buildLanguageInstruction(q);
     final prompt = '''
-तुम एक अनुभवी पढ़ाई टीचर हो जो हर विषय (गणित, विज्ञान, इतिहास, भूगोल, भाषा, या कोई भी एकेडमिक पढ़ाई) को आसान भाषा में समझाता है।
-छात्र ने जिस भाषा (Hindi, English, या Hinglish) में पूछा है, उसी भाषा में जवाब दो।
-किसी भी विषय का सवाल हो, जवाब को ठीक 4 साफ़ हिस्सों में बाँटो:
-1. सीधा और छोटा जवाब
-2. स्टेप-बाय-स्टेप समझ
-3. रोज़मर्रा / देसी उदाहरण
-4. शॉर्ट तरीका / जल्दी याद रखने की ट्रिक
+तुम एक ऐसे शिक्षक हो जो बच्चा हो या बूढ़ा, भारत या विदेश—हर किसी को एक ही बार में आसान शब्दों में समझा देते हो।
+$langRule
+जवाब बहुत कम शब्दों में दो।
+Markdown के निशान (**, ##, ---, >) और LaTeX के \$ निशान बिल्कुल मत लिखो।
+जवाब सिर्फ इन 3 छोटे हिस्सों में दो:
+
+1. एक लाइन में मतलब: (10-15 शब्दों में सीधा सार)
+2. घर-बाहर की मिसाल: (रोज़मर्रा की एक आसान और सटीक मिसाल)
+3. दिमाग में बिठाने की बात: (एक छोटी लाइन या ट्रिक जिसे भूलना मुश्किल हो)
 
 सवाल: $q
 ''';
@@ -356,12 +423,15 @@ class _SolverHomePageState extends State<SolverHomePage> {
       _isLoading = true;
     });
 
-    final nextNum = _extraMethods.length + 5;
+    final langRule = _buildLanguageInstruction(_currentQuestion!);
     final prompt = '''
-छात्र को यह पढ़ाई का टॉपिक/सवाल अभी पूरी तरह समझ नहीं आया है। उसी भाषा में एक बिल्कुल नया, और आसान तरीका (तरीका #$nextNum) और साथ में एक छोटा "शॉर्ट तरीका" (Quick Short Way) दो—जैसे नई तुलना, आसान कहानी/उदाहरण, या बिना रटे याद रखने का छोटा तरीका।
+बच्चा या बुजुर्ग इसे अभी भी पूरी तरह नहीं समझ पाया है।
+$langRule
+बिल्कुल कम शब्दों में, एक नई रोज़मर्रा की मिसाल और एक छोटी याद रखने वाली लाइन दो।
+Markdown के निशान (**, ##, ---, >) और \$ के निशान बिल्कुल मत लिखो।
 
 सवाल: $_currentQuestion
-पिछला समझाया गया हिस्सा: $_currentAnswer
+पिछला जवाब: $_currentAnswer
 ''';
 
     try {
@@ -399,16 +469,16 @@ class _SolverHomePageState extends State<SolverHomePage> {
     });
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('बढ़िया, सवाल सेव हो गया। अब अगला सवाल डालो।')),
+      const SnackBar(content: Text('बढ़िया, सवाल सेव हो गया। अब अगला सवाल पूछो।')),
     );
   }
 
   Future<void> _persistCurrentItem({required bool understood}) async {
     if (_currentQuestion == null || _currentAnswer == null) return;
     final item = SolvedItem(
-      question: _currentQuestion!,
-      answerText: _currentAnswer!,
-      extraMethods: List<String>.from(_extraMethods),
+      question: cleanDisplayText(_currentQuestion!),
+      answerText: cleanDisplayText(_currentAnswer!),
+      extraMethods: _extraMethods.map(cleanDisplayText).toList(),
       understood: understood,
       date: _todayKey(),
     );
@@ -442,18 +512,18 @@ class _SolverHomePageState extends State<SolverHomePage> {
               color: Colors.white,
               margin: const EdgeInsets.only(bottom: 10),
               child: ListTile(
-                title: Text(item.question),
+                title: Text(cleanDisplayText(item.question)),
                 subtitle: Text(
                   '${item.date} • ${item.understood ? "समझ आ गया" : "अभ्यास जारी"}',
                 ),
                 onTap: () {
                   Navigator.pop(context);
                   setState(() {
-                    _currentQuestion = item.question;
-                    _currentAnswer = item.answerText;
+                    _currentQuestion = cleanDisplayText(item.question);
+                    _currentAnswer = cleanDisplayText(item.answerText);
                     _extraMethods
                       ..clear()
-                      ..addAll(item.extraMethods);
+                      ..addAll(item.extraMethods.map(cleanDisplayText));
                     _understood = item.understood;
                   });
                 },
@@ -483,6 +553,19 @@ class _SolverHomePageState extends State<SolverHomePage> {
         backgroundColor: const Color(0xFFF8F9FA),
         title: const Text('SamajhAaya'),
         actions: [
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _langMode,
+              items: const [
+                DropdownMenuItem(value: 'hi-IN', child: Text('हिन्दी')),
+                DropdownMenuItem(value: 'en-US', child: Text('English')),
+                DropdownMenuItem(value: 'auto', child: Text('Auto')),
+              ],
+              onChanged: (val) {
+                if (val != null) _changeLangMode(val);
+              },
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'सेव किए हुए सवाल',
@@ -561,7 +644,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
                         children: [
                           Expanded(
                             child: Text(
-                              _currentQuestion ?? '',
+                              cleanDisplayText(_currentQuestion ?? ''),
                               style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -575,15 +658,23 @@ class _SolverHomePageState extends State<SolverHomePage> {
                         ],
                       ),
                       const Divider(),
-                      Text(_currentAnswer!),
+                      Text(
+                        cleanDisplayText(_currentAnswer!),
+                        style: const TextStyle(fontSize: 15, height: 1.45),
+                      ),
+                      const SizedBox(height: 12),
+                      ConceptVisualBox(question: _currentQuestion ?? ''),
                       for (int i = 0; i < _extraMethods.length; i++) ...[
                         const Divider(),
                         Text(
-                          'तरीका #${i + 5}',
+                          'और आसान तरीका #${i + 2}',
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
-                        Text(_extraMethods[i]),
+                        Text(
+                          cleanDisplayText(_extraMethods[i]),
+                          style: const TextStyle(fontSize: 15, height: 1.45),
+                        ),
                       ],
                       const Divider(),
                       const Text(
@@ -617,5 +708,146 @@ class _SolverHomePageState extends State<SolverHomePage> {
         ),
       ),
     );
+  }
+}
+
+class ConceptVisualBox extends StatelessWidget {
+  final String question;
+
+  const ConceptVisualBox({super.key, required this.question});
+
+  @override
+  Widget build(BuildContext context) {
+    final q = question.toLowerCase();
+    final isDelta = q.contains('delta') || q.contains('डेल्टा');
+    final isSquare = q.contains('square') ||
+        q.contains('स्क्वायर') ||
+        q.contains('वर्ग') ||
+        q.contains('^2') ||
+        q.contains('a + b');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isDelta
+                ? 'चित्र: नदी की धारा और तिकोना डेल्टा'
+                : isSquare
+                    ? 'चित्र: वर्ग और हिस्सों की बनावट'
+                    : 'चित्र: एक नज़र में समझने का रास्ता',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 110,
+            width: double.infinity,
+            child: CustomPaint(
+              painter: _ConceptDiagramPainter(
+                isDelta: isDelta,
+                isSquare: isSquare,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConceptDiagramPainter extends CustomPainter {
+  final bool isDelta;
+  final bool isSquare;
+
+  _ConceptDiagramPainter({
+    required this.isDelta,
+    required this.isSquare,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final riverPaint = Paint()
+      ..color = const Color(0xFF1A73E8)
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke;
+
+    final deltaFill = Paint()
+      ..color = const Color(0xFFD97706).withValues(alpha: 0.25)
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color = const Color(0xFF334155)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    if (isDelta) {
+      canvas.drawLine(
+        Offset(16, size.height * 0.5),
+        Offset(size.width * 0.48, size.height * 0.5),
+        riverPaint,
+      );
+      final tri = Path()
+        ..moveTo(size.width * 0.48, size.height * 0.5)
+        ..lineTo(size.width * 0.88, size.height * 0.16)
+        ..lineTo(size.width * 0.88, size.height * 0.84)
+        ..close();
+      canvas.drawPath(tri, deltaFill);
+      canvas.drawPath(tri, borderPaint);
+
+      canvas.drawLine(
+        Offset(size.width * 0.48, size.height * 0.5),
+        Offset(size.width * 0.88, size.height * 0.25),
+        riverPaint..strokeWidth = 2,
+      );
+      canvas.drawLine(
+        Offset(size.width * 0.48, size.height * 0.5),
+        Offset(size.width * 0.88, size.height * 0.75),
+        riverPaint..strokeWidth = 2,
+      );
+    } else if (isSquare) {
+      final box = Rect.fromLTWH(
+        size.width * 0.25,
+        12,
+        size.width * 0.5,
+        size.height - 24,
+      );
+      canvas.drawRect(box, deltaFill);
+      canvas.drawRect(box, borderPaint);
+      canvas.drawLine(
+        Offset(box.center.dx, box.top),
+        Offset(box.center.dx, box.bottom),
+        borderPaint..strokeWidth = 1.5,
+      );
+      canvas.drawLine(
+        Offset(box.left, box.center.dy),
+        Offset(box.right, box.center.dy),
+        borderPaint..strokeWidth = 1.5,
+      );
+    } else {
+      final r1 = Rect.fromLTWH(12, 24, size.width * 0.26, 56);
+      final r2 = Rect.fromLTWH(size.width * 0.37, 24, size.width * 0.26, 56);
+      final r3 = Rect.fromLTWH(size.width * 0.72, 24, size.width * 0.22, 56);
+
+      canvas.drawRRect(RRect.fromRectAndRadius(r1, const Radius.circular(8)), deltaFill);
+      canvas.drawRRect(RRect.fromRectAndRadius(r1, const Radius.circular(8)), borderPaint);
+
+      canvas.drawRRect(RRect.fromRectAndRadius(r2, const Radius.circular(8)), deltaFill);
+      canvas.drawRRect(RRect.fromRectAndRadius(r2, const Radius.circular(8)), borderPaint);
+
+      canvas.drawRRect(RRect.fromRectAndRadius(r3, const Radius.circular(8)), deltaFill);
+      canvas.drawRRect(RRect.fromRectAndRadius(r3, const Radius.circular(8)), borderPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ConceptDiagramPainter oldDelegate) {
+    return oldDelegate.isDelta != isDelta || oldDelegate.isSquare != isSquare;
   }
 }
