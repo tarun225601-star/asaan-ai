@@ -376,12 +376,12 @@ class _SolverHomePageState extends State<SolverHomePage> {
 
   String _buildLanguageInstruction() {
     if (_langMode == 'en-US') {
-      return 'Respond in simple, clear English suitable for both children and elders worldwide.';
+      return 'Respond in simple, clear English suitable for students and learners.';
     }
     if (_langMode == 'auto') {
-      return 'Reply in the same language the user asked in (Hindi, English, or any global language), keeping words simple and clear for all ages.';
+      return 'Reply in the same language the user asked in (Hindi, English, or any global language), keeping words clear, complete, and easy to follow.';
     }
-    return 'सवाल जिस भी भाषा में हो, जवाब आसान बोलचाल की हिंदी में दो ताकि बच्चा हो या बूढ़ा, हर कोई एक बार में समझ जाए।';
+    return 'सवाल जिस भी भाषा में हो, जवाब आसान और साफ़ बोलचाल की हिंदी में दो ताकि विद्यार्थी एक बार में पूरा समझ जाए।';
   }
 
   Future<String> _callGemini(String prompt, {File? imageFile, String? mimeType}) async {
@@ -439,7 +439,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
     final hasImg = _pickedImageFile != null;
     if (qText.isEmpty && !hasImg) return;
 
-    final displayQ = qText.isNotEmpty ? qText : 'फ़ोटो में दिख रहा पढ़ाई का सवाल समझाओ';
+    final displayQ = qText.isNotEmpty ? qText : 'फ़ोटो में दिख रहा पढ़ाई का सवाल हल करके समझाओ';
 
     FocusScope.of(context).unfocus();
     await _tts.stop();
@@ -481,17 +481,17 @@ class _SolverHomePageState extends State<SolverHomePage> {
 
     final langRule = _buildLanguageInstruction();
     final prompt = '''
-तुम एक ईमानदार, सरल और ज़मीन से जुड़े पढ़ाई के शिक्षक हो। बच्चा हो या बूढ़ा, भारत या विदेश—हर कोई आसानी से समझ जाए।
+तुम एक अनुभवी कोचिंग सेंटर के शिक्षक हो, जिसके पास विषय की 100 डिग्री गहरी पकड़ है। हर पढ़ाई के सवाल का पहले पूरा और पक्का उत्तर/हल निकालो, पूरा-पूरा नीचे से ऊपर तक स्टेप-बाय-स्टेप समझाओ, और आखिर में शॉर्ट तरीके से भी बताओ।
 $langRule
-सख्त नियम: यह ऐप केवल पढ़ाई, स्कूल/कॉलेज के विषय, गणित, विज्ञान, भाषा, सामान्य ज्ञान या सीखने-समझाने के सवालों का जवाब देगा।
+सख्त नियम: यह ऐप केवल पढ़ाई, स्कूल/कॉलेज के विषय, गणित, विज्ञान, भाषा, इतिहास, भूगोल, सामान्य ज्ञान या सीखने-समझाने के सवालों का जवाब देगा।
 यदि सवाल पढ़ाई या सीखने से जुड़ा नहीं है (जैसे गपशप, मज़ाक, व्यक्तिगत चैट, या गैर-शैक्षणिक विषय), तो कोई और जवाब मत दो—सिर्फ़ इतना कहो कि यह ऐप केवल पढ़ाई के सवालों के लिए है और पढ़ाई का कोई सवाल पूछने को कहो।
-यदि सवाल पढ़ाई का है और उसमें गणित या गणना हो, तो पहले स्टेप-बाय-स्टेप पूरा हल और सही जवाब दो।
+महत्वपूर्ण: जवाब में "घर-बाहर की मिसाल" या घर-परिवार/मसालों/बाहरी चीज़ों की बेमतलब तुलना बिल्कुल मत डालो। सीधे पढ़ाई और विषय की बात करो।
 Markdown के निशान (**, ##, ---, >) और LaTeX के \$ निशान बिल्कुल मत लिखो।
 
-पढ़ाई के सवाल का जवाब इन आसान हिस्सों में लिखो (ज़रूरत के हिसाब से पूरा और स्पष्ट रखो):
-1. सीधा और सही जवाब: (पूरी और सटीक बात / हल)
-2. घर-बाहर की मिसाल: (रोज़मर्रा की आसान मिसाल)
-3. दिमाग में बिठाने की बात: (मुख्य बात को याद रखने की लाइन)
+हर पढ़ाई के सवाल को इस क्रम में पूरा हल करो और समझाओ:
+1. पक्का उत्तर और पूरा हल: (सवाल का अंतिम उत्तर और स्टेप-बाय-स्टेप पूरा हल/विवरण)
+2. पूरा समझना (कोचिंग स्टाइल): (नियम, सूत्र या अवधारणा को शुरू से आखिर तक स्पष्ट रूप से समझाओ)
+3. शॉर्ट तरीका और निचोड़: (परीक्षा/तेज़ रिवीजन के लिए छोटा तरीका और 1-2 लाइन का पक्का सार)
 
 सवाल: $displayQ
 ''';
@@ -538,9 +538,9 @@ Markdown के निशान (**, ##, ---, >) और LaTeX के \$ नि�
 
     final langRule = _buildLanguageInstruction();
     final prompt = '''
-बच्चा या बुजुर्ग इसे अभी भी पूरी तरह नहीं समझ पाया है।
+तुम एक अनुभवी कोचिंग सेंटर के शिक्षक हो। इस पढ़ाई के सवाल को पहले से अलग तरीके से समझाओ—पहले पूरा और पक्का हल/समझ दो, फिर आखिर में शॉर्ट तरीका और निचोड़ बताओ।
 $langRule
-यह ऐप केवल पढ़ाई के सवालों के लिए है। पहले बताए गए तरीकों को बिल्कुल मत दोहराओ। एक एकदम नई रोज़मर्रा की मिसाल और एक छोटी याद रखने वाली लाइन दो।
+यह ऐप केवल पढ़ाई के सवालों के लिए है। पहले बताए गए तरीकों को मत दोहराओ, और "घर-बाहर की मिसाल" या घर-बाहर की तुलना बिल्कुल मत डालो।
 Markdown के निशान (**, ##, ---, >) और LaTeX के \$ निशान बिल्कुल मत लिखो।
 
 सवाल: $_currentQuestion
@@ -837,7 +837,7 @@ $previousWays
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 10),
-                          Text('पढ़ाई का जवाब तैयार हो रहा है...'),
+                          Text('पूरा हल और समझ तैयार हो रही है...'),
                         ],
                       ),
                     ),
@@ -886,7 +886,7 @@ $previousWays
                         for (int i = 0; i < _extraMethods.length; i++) ...[
                           const Divider(height: 20),
                           Text(
-                            'और आसान तरीका #${i + 2}',
+                            'और तरीका #${i + 2}',
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                           const SizedBox(height: 4),
