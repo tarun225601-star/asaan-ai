@@ -441,6 +441,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
 
     final displayQ = qText.isNotEmpty ? qText : 'फ़ोटो में दिख रहा पढ़ाई का सवाल समझाओ';
 
+    FocusScope.of(context).unfocus();
     await _tts.stop();
     setState(() => _isSpeaking = false);
 
@@ -484,7 +485,6 @@ class _SolverHomePageState extends State<SolverHomePage> {
 $langRule
 सख्त नियम: यह ऐप केवल पढ़ाई, स्कूल/कॉलेज के विषय, गणित, विज्ञान, भाषा, सामान्य ज्ञान या सीखने-समझाने के सवालों का जवाब देगा।
 यदि सवाल पढ़ाई या सीखने से जुड़ा नहीं है (जैसे गपशप, मज़ाक, व्यक्तिगत चैट, या गैर-शैक्षणिक विषय), तो कोई और जवाब मत दो—सिर्फ़ इतना कहो कि यह ऐप केवल पढ़ाई के सवालों के लिए है और पढ़ाई का कोई सवाल पूछने को कहो।
-ध्यान रहे: यह ऐप कोई नई फोटो या तस्वीर खुद बनाकर नहीं देता (इसमें सिर्फ़ कॉन्सेप्ट समझाने के लिए छोटे डायग्राम और आसान जवाब हैं)। अगर कोई फोटो बनाने के बारे में पूछे, तो सही और ईमानदार बात बताओ।
 यदि सवाल पढ़ाई का है और उसमें गणित या गणना हो, तो पहले स्टेप-बाय-स्टेप पूरा हल और सही जवाब दो।
 Markdown के निशान (**, ##, ---, >) और LaTeX के \$ निशान बिल्कुल मत लिखो।
 
@@ -744,6 +744,7 @@ $previousWays
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: const Color(0xFFF4F6F9),
         surfaceTintColor: Colors.transparent,
@@ -793,620 +794,223 @@ $previousWays
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      body: Column(
         children: [
-          if (_pickedImageFile != null) ...[
-            Stack(
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.file(
-                    _pickedImageFile!,
-                    height: 165,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: CircleAvatar(
-                    radius: 16,
-                    backgroundColor: Colors.black54,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                      onPressed: _clearPickedImage,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 28),
-              child: Center(
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 10),
-                    Text('पढ़ाई का जवाब तैयार हो रहा है...'),
-                  ],
-                ),
-              ),
-            )
-          else if (_currentAnswer != null)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                if (_pickedImageFile != null) ...[
+                  Stack(
                     children: [
-                      Expanded(
-                        child: Text(
-                          cleanDisplayText(_currentQuestion ?? ''),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.file(
+                          _pickedImageFile!,
+                          height: 165,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                            onPressed: _clearPickedImage,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 28),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 10),
+                          Text('पढ़ाई का जवाब तैयार हो रहा है...'),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (_currentAnswer != null)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                cleanDisplayText(_currentQuestion ?? ''),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15.5,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                            ),
+                            IconButton.filledTonal(
+                              icon: Icon(
+                                _isSpeaking ? Icons.stop_circle : Icons.volume_up,
+                              ),
+                              tooltip: _isSpeaking ? 'आवाज़ रोकें' : 'सुनें (0.30x)',
+                              onPressed: _toggleSpeak,
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 20),
+                        Text(
+                          cleanDisplayText(_currentAnswer!),
                           style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15.5,
-                            color: Color(0xFF0F172A),
+                            fontSize: 15,
+                            height: 1.5,
+                            color: Color(0xFF1E293B),
                           ),
                         ),
-                      ),
-                      IconButton.filledTonal(
-                        icon: Icon(
-                          _isSpeaking ? Icons.stop_circle : Icons.volume_up,
+                        for (int i = 0; i < _extraMethods.length; i++) ...[
+                          const Divider(height: 20),
+                          Text(
+                            'और आसान तरीका #${i + 2}',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            cleanDisplayText(_extraMethods[i]),
+                            style: const TextStyle(fontSize: 15, height: 1.5),
+                          ),
+                        ],
+                        const Divider(height: 20),
+                        const Text(
+                          'समझ आया क्या?',
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        tooltip: _isSpeaking ? 'आवाज़ रोकें' : 'सुनें (0.30x)',
-                        onPressed: _toggleSpeak,
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 20),
-                  Text(
-                    cleanDisplayText(_currentAnswer!),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.5,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  ConceptVisualBox(question: _currentQuestion ?? ''),
-                  for (int i = 0; i < _extraMethods.length; i++) ...[
-                    const Divider(height: 20),
-                    Text(
-                      'और आसान तरीका #${i + 2}',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      cleanDisplayText(_extraMethods[i]),
-                      style: const TextStyle(fontSize: 15, height: 1.5),
-                    ),
-                  ],
-                  const Divider(height: 20),
-                  const Text(
-                    'समझ आया क्या?',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: _isLoading ? null : _markUnderstoodAndNext,
-                          style: FilledButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: _isLoading ? null : _markUnderstoodAndNext,
+                                style: FilledButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text('हाँ, समझ आ गया'),
+                              ),
                             ),
-                          ),
-                          child: const Text('हाँ, समझ आ गया'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _isLoading ? null : _addAnotherMethod,
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _isLoading ? null : _addAnotherMethod,
+                                style: OutlinedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text('नहीं, और बताओ'),
+                              ),
                             ),
-                          ),
-                          child: const Text('नहीं, और बताओ'),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'सिर्फ़ पढ़ाई के सवाल पूछें',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'नीचे बार में सवाल लिखें, माइक से बोलें या + दबाकर कैमरा/गैलरी से फ़ोटो चुनें।',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: EdgeInsets.fromLTRB(
-            12,
-            8,
-            12,
-            MediaQuery.of(context).viewInsets.bottom > 0 ? 8 : 10,
-          ),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF4F6F9),
-            border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-          ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: const Color(0xFFCBD5E1)),
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: _isLoading ? null : _openAttachSheet,
-                  icon: const Icon(Icons.add),
-                  tooltip: 'फ़ोटो जोड़ें',
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _questionController,
-                    minLines: 1,
-                    maxLines: 3,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _isLoading ? null : _solveQuestion(),
-                    decoration: const InputDecoration(
-                      hintText: 'पढ़ाई का सवाल पूछें...',
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'सिर्फ़ पढ़ाई के सवाल पूछें',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'नीचे बार में सवाल लिखें, माइक से बोलें या + दबाकर कैमरा/गैलरी से फ़ोटो चुनें।',
+                          style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                IconButton(
-                  onPressed: _isLoading ? null : _toggleListen,
-                  icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
-                  tooltip: _isListening ? 'रोकें' : 'बोलें',
-                ),
-                IconButton.filled(
-                  onPressed: _isLoading ? null : _solveQuestion,
-                  icon: const Icon(Icons.arrow_upward, size: 20),
-                  tooltip: 'समझाओ',
-                ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class ConceptVisualBox extends StatelessWidget {
-  final String question;
-
-  const ConceptVisualBox({super.key, required this.question});
-
-  String _detectTopic(String raw) {
-    final q = raw.toLowerCase();
-    if (q.contains('delta') || q.contains('डेल्टा')) return 'delta';
-    if (q.contains('square') ||
-        q.contains('स्क्वायर') ||
-        q.contains('वर्ग') ||
-        q.contains('^2') ||
-        q.contains('a + b')) {
-      return 'square';
-    }
-    if (q.contains('energy') ||
-        q.contains('mc2') ||
-        q.contains('mc^2') ||
-        q.contains('e=mc') ||
-        q.contains('ऊर्जा') ||
-        q.contains('बिजली') ||
-        q.contains('आग') ||
-        q.contains('गर्मी') ||
-        q.contains('heat') ||
-        q.contains('light') ||
-        q.contains('प्रकाश')) {
-      return 'energy';
-    }
-    if (q.contains('water') ||
-        q.contains('पानी') ||
-        q.contains('नदी') ||
-        q.contains('बारिश') ||
-        q.contains('rain') ||
-        q.contains('wave') ||
-        q.contains('लहर')) {
-      return 'water';
-    }
-    if (q.contains('speed') ||
-        q.contains('train') ||
-        q.contains('ट्रेन') ||
-        q.contains('गति') ||
-        q.contains('चाल') ||
-        q.contains('दूरी') ||
-        q.contains('motion') ||
-        q.contains('force') ||
-        q.contains('बल')) {
-      return 'motion';
-    }
-    if (q.contains('plant') ||
-        q.contains('tree') ||
-        q.contains('पौधा') ||
-        q.contains('पेड़') ||
-        q.contains('sun') ||
-        q.contains('सूरज') ||
-        q.contains('photosynthesis')) {
-      return 'nature';
-    }
-    if (q.contains('cycle') ||
-        q.contains('चक्र') ||
-        q.contains('process') ||
-        q.contains('प्रक्रिया')) {
-      return 'cycle';
-    }
-    return 'concept';
-  }
-
-  Map<String, String> _topicInfo(String topic, String question) {
-    switch (topic) {
-      case 'delta':
-        return {
-          'title': 'चित्र: डेल्टा कैसे बनता है',
-          'left': 'नदी का बहाव',
-          'mid': 'मिट्टी जमा',
-          'right': 'तिकोना डेल्टा',
-          'note': 'नदी रुकती है, मिट्टी जमती है और धारा बँट जाती है।',
-        };
-      case 'square':
-        return {
-          'title': 'चित्र: वर्ग और हिस्सों का जोड़',
-          'left': 'अलग वर्ग',
-          'mid': 'जोड़ी का गुणन',
-          'right': 'पूरा हिस्सा',
-          'note': 'हर टुकड़े का क्षेत्रफल जोड़कर पूरा हिस्सा बनता है।',
-        };
-      case 'energy':
-        return {
-          'title': 'चित्र: वजन (m) से ऊर्जा (E)',
-          'left': 'थोड़ा वजन (m)',
-          'mid': 'तेज़ रफ़्तार (c²)',
-          'right': 'बड़ी ऊर्जा (E)',
-          'note': 'छोटे से हिस्से में भी बड़ी ताकत छिपी हो सकती है।',
-        };
-      case 'water':
-        return {
-          'title': 'चित्र: पानी और लहर का असर',
-          'left': 'शुरुआत',
-          'mid': 'लहर / बहाव',
-          'right': 'बदलाव',
-          'note': 'पानी की चाल और रुकावट से उसका रूप बदलता है।',
-        };
-      case 'motion':
-        return {
-          'title': 'चित्र: चाल, दिशा और दूरी',
-          'left': 'शुरुआती जगह',
-          'mid': 'रफ़्तार / बल',
-          'right': 'तय दूरी',
-          'note': 'रफ़्तार जितनी तेज़ होगी, असर और दूरी उतनी ज़्यादा होगी।',
-        };
-      case 'nature':
-        return {
-          'title': 'चित्र: सूरज और पौधे का विकास',
-          'left': 'सूरज / हवा',
-          'mid': 'पौधा / पत्तियाँ',
-          'right': 'बढ़त / जीवन',
-          'note': 'रोशनी और सही चीज़ें मिलकर चीज़ों को बढ़ाती हैं।',
-        };
-      case 'cycle':
-        return {
-          'title': 'चित्र: घूमता हुआ चक्र',
-          'left': 'पहला चरण',
-          'mid': 'बीच का बदलाव',
-          'right': 'वापसी / नया रूप',
-          'note': 'यह क्रम घूमता रहता है और आगे बढ़ता है।',
-        };
-      default:
-        final cleanQ = question.trim();
-        final shortQ = cleanQ.length > 24 ? '${cleanQ.substring(0, 24)}...' : cleanQ;
-        return {
-          'title': 'चित्र: "$shortQ" का आसान सार',
-          'left': 'मुख्य बात',
-          'mid': 'कैसे होता है',
-          'right': 'नतीजा',
-          'note': '$shortQ को समझने के लिए कारण और नतीजे को जोड़कर देखें।',
-        };
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final topic = _detectTopic(question);
-    final info = _topicInfo(topic, question);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            info['title']!,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 95,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: _ConceptDiagramPainter(
-                topic: topic,
-                seed: question.codeUnits.fold<int>(0, (a, b) => a + b),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF4F6F9),
+                border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
               ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  info['left']!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: _isLoading ? null : _openAttachSheet,
+                      icon: const Icon(Icons.add),
+                      tooltip: 'फ़ोटो जोड़ें',
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _questionController,
+                        minLines: 1,
+                        maxLines: 3,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _isLoading ? null : _solveQuestion(),
+                        decoration: const InputDecoration(
+                          hintText: 'पढ़ाई का सवाल पूछें...',
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _isLoading ? null : _toggleListen,
+                      icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+                      tooltip: _isListening ? 'रोकें' : 'बोलें',
+                    ),
+                    IconButton.filled(
+                      onPressed: _isLoading ? null : _solveQuestion,
+                      icon: const Icon(Icons.arrow_upward, size: 20),
+                      tooltip: 'समझाओ',
+                    ),
+                  ],
                 ),
               ),
-              Expanded(
-                child: Text(
-                  info['mid']!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  info['right']!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              'आसान समझ: ${info['note']!}',
-              style: const TextStyle(fontSize: 12.5, height: 1.35),
             ),
           ),
         ],
       ),
     );
-  }
-}
-
-class _ConceptDiagramPainter extends CustomPainter {
-  final String topic;
-  final int seed;
-
-  _ConceptDiagramPainter({
-    required this.topic,
-    required this.seed,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final blueStroke = Paint()
-      ..color = const Color(0xFF1A73E8)
-      ..strokeWidth = 3.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final amberFill = Paint()
-      ..color = const Color(0xFFD97706).withValues(alpha: 0.28)
-      ..style = PaintingStyle.fill;
-
-    final greenFill = Paint()
-      ..color = const Color(0xFF16A34A).withValues(alpha: 0.25)
-      ..style = PaintingStyle.fill;
-
-    final darkStroke = Paint()
-      ..color = const Color(0xFF334155)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    if (topic == 'delta') {
-      canvas.drawLine(
-        Offset(16, size.height * 0.5),
-        Offset(size.width * 0.48, size.height * 0.5),
-        blueStroke,
-      );
-      final tri = Path()
-        ..moveTo(size.width * 0.48, size.height * 0.5)
-        ..lineTo(size.width * 0.88, size.height * 0.14)
-        ..lineTo(size.width * 0.88, size.height * 0.86)
-        ..close();
-      canvas.drawPath(tri, amberFill);
-      canvas.drawPath(tri, darkStroke);
-
-      canvas.drawLine(
-        Offset(size.width * 0.48, size.height * 0.5),
-        Offset(size.width * 0.88, size.height * 0.25),
-        blueStroke..strokeWidth = 2,
-      );
-      canvas.drawLine(
-        Offset(size.width * 0.48, size.height * 0.5),
-        Offset(size.width * 0.88, size.height * 0.75),
-        blueStroke..strokeWidth = 2,
-      );
-    } else if (topic == 'square') {
-      final box = Rect.fromLTWH(
-        size.width * 0.28,
-        10,
-        size.width * 0.44,
-        size.height - 20,
-      );
-      canvas.drawRect(box, amberFill);
-      canvas.drawRect(box, darkStroke);
-      canvas.drawLine(
-        Offset(box.center.dx, box.top),
-        Offset(box.center.dx, box.bottom),
-        darkStroke..strokeWidth = 1.5,
-      );
-      canvas.drawLine(
-        Offset(box.left, box.center.dy),
-        Offset(box.right, box.center.dy),
-        darkStroke..strokeWidth = 1.5,
-      );
-    } else if (topic == 'energy') {
-      final massCircle = Offset(size.width * 0.22, size.height * 0.55);
-      canvas.drawCircle(massCircle, 18, amberFill);
-      canvas.drawCircle(massCircle, 18, darkStroke);
-
-      final burst = Path()
-        ..moveTo(size.width * 0.54, size.height * 0.16)
-        ..lineTo(size.width * 0.68, size.height * 0.44)
-        ..lineTo(size.width * 0.58, size.height * 0.46)
-        ..lineTo(size.width * 0.78, size.height * 0.84)
-        ..lineTo(size.width * 0.48, size.height * 0.55)
-        ..lineTo(size.width * 0.58, size.height * 0.53)
-        ..close();
-      canvas.drawPath(
-        burst,
-        Paint()
-          ..color = const Color(0xFFF59E0B)
-          ..style = PaintingStyle.fill,
-      );
-      canvas.drawPath(burst, darkStroke);
-      canvas.drawLine(
-        Offset(size.width * 0.22 + 22, size.height * 0.55),
-        Offset(size.width * 0.50, size.height * 0.52),
-        blueStroke,
-      );
-    } else if (topic == 'water') {
-      for (int row = 0; row < 3; row++) {
-        final yBase = 22.0 + row * 24.0;
-        final wave = Path()..moveTo(14, yBase);
-        for (double x = 14; x < size.width - 14; x += 24) {
-          wave.quadraticBezierTo(x + 6, yBase - 9, x + 12, yBase);
-          wave.quadraticBezierTo(x + 18, yBase + 9, x + 24, yBase);
-        }
-        canvas.drawPath(wave, blueStroke..strokeWidth = row == 1 ? 3.2 : 2.0);
-      }
-    } else if (topic == 'motion') {
-      final yLine = size.height * 0.68;
-      canvas.drawLine(Offset(16, yLine), Offset(size.width - 18, yLine), darkStroke);
-      final body = RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.35, yLine - 32, 62, 22),
-        const Radius.circular(6),
-      );
-      canvas.drawRRect(body, amberFill);
-      canvas.drawRRect(body, darkStroke);
-      canvas.drawCircle(Offset(size.width * 0.35 + 14, yLine - 6), 5.5, darkStroke);
-      canvas.drawCircle(Offset(size.width * 0.35 + 48, yLine - 6), 5.5, darkStroke);
-      canvas.drawLine(
-        Offset(size.width * 0.35 + 70, yLine - 20),
-        Offset(size.width - 20, yLine - 20),
-        blueStroke,
-      );
-    } else if (topic == 'nature') {
-      final sunCenter = Offset(size.width * 0.22, size.height * 0.32);
-      canvas.drawCircle(
-        sunCenter,
-        15,
-        Paint()
-          ..color = const Color(0xFFFACC15)
-          ..style = PaintingStyle.fill,
-      );
-      canvas.drawCircle(sunCenter, 15, darkStroke);
-
-      final stemBase = Offset(size.width * 0.65, size.height - 10);
-      final stemTop = Offset(size.width * 0.65, 20);
-      canvas.drawLine(
-        stemBase,
-        stemTop,
-        Paint()
-          ..color = const Color(0xFF15803D)
-          ..strokeWidth = 4,
-      );
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset(size.width * 0.65 - 15, 42), width: 24, height: 13),
-        greenFill,
-      );
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset(size.width * 0.65 + 15, 32), width: 24, height: 13),
-        greenFill,
-      );
-    } else if (topic == 'cycle') {
-      final rect = Rect.fromCenter(
-        center: Offset(size.width * 0.5, size.height * 0.5),
-        width: 64,
-        height: 64,
-      );
-      canvas.drawArc(rect, 0.2, 5.5, false, blueStroke);
-    } else {
-      final leftNode = Offset(size.width * 0.20, size.height * 0.55);
-      final midNode = Offset(size.width * 0.50, size.height * 0.28 + (seed % 6));
-      final rightNode = Offset(size.width * 0.80, size.height * 0.55);
-
-      canvas.drawLine(leftNode, midNode, darkStroke);
-      canvas.drawLine(midNode, rightNode, darkStroke);
-      canvas.drawLine(leftNode, rightNode, blueStroke);
-
-      canvas.drawCircle(leftNode, 16, amberFill);
-      canvas.drawCircle(leftNode, 16, darkStroke);
-      canvas.drawCircle(midNode, 13, Paint()..color = const Color(0xFFDBEAFE)..style = PaintingStyle.fill);
-      canvas.drawCircle(midNode, 13, darkStroke);
-      canvas.drawCircle(rightNode, 16, greenFill);
-      canvas.drawCircle(rightNode, 16, darkStroke);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ConceptDiagramPainter oldDelegate) {
-    return oldDelegate.topic != topic || oldDelegate.seed != seed;
   }
 }
