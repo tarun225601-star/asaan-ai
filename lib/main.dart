@@ -195,6 +195,42 @@ class _SolverHomePageState extends State<SolverHomePage> {
     }
   }
 
+  void _openAttachSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('कैमरा से फ़ोटो खींचें'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('गैलरी से फ़ोटो चुनें'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _clearPickedImage() {
     setState(() {
       _pickedImageFile = null;
@@ -403,7 +439,7 @@ class _SolverHomePageState extends State<SolverHomePage> {
     final hasImg = _pickedImageFile != null;
     if (qText.isEmpty && !hasImg) return;
 
-    final displayQ = qText.isNotEmpty ? qText : 'फ़ोटो में दिख रहा सवाल / चीज़ समझाओ';
+    final displayQ = qText.isNotEmpty ? qText : 'फ़ोटो में दिख रहा पढ़ाई का सवाल समझाओ';
 
     await _tts.stop();
     setState(() => _isSpeaking = false);
@@ -444,15 +480,18 @@ class _SolverHomePageState extends State<SolverHomePage> {
 
     final langRule = _buildLanguageInstruction();
     final prompt = '''
-तुम एक बहुत ही सरल, देसी और ज़मीन से जुड़े शिक्षक हो। बच्चा हो या बूढ़ा, भारत या विदेश—हर कोई एक ही बार में समझ जाए।
+तुम एक ईमानदार, सरल और ज़मीन से जुड़े पढ़ाई के शिक्षक हो। बच्चा हो या बूढ़ा, भारत या विदेश—हर कोई आसानी से समझ जाए।
 $langRule
-बिल्कुल सीधा, छोटा और आसान जवाब दो। भारी किताबी शब्द कम रखो। यदि फ़ोटो दी गई है तो फ़ोटो देखकर उसका मुख्य अर्थ/सवाल भी समझो।
+सख्त नियम: यह ऐप केवल पढ़ाई, स्कूल/कॉलेज के विषय, गणित, विज्ञान, भाषा, सामान्य ज्ञान या सीखने-समझाने के सवालों का जवाब देगा।
+यदि सवाल पढ़ाई या सीखने से जुड़ा नहीं है (जैसे गपशप, मज़ाक, व्यक्तिगत चैट, या गैर-शैक्षणिक विषय), तो कोई और जवाब मत दो—सिर्फ़ इतना कहो कि यह ऐप केवल पढ़ाई के सवालों के लिए है और पढ़ाई का कोई सवाल पूछने को कहो।
+ध्यान रहे: यह ऐप कोई नई फोटो या तस्वीर खुद बनाकर नहीं देता (इसमें सिर्फ़ कॉन्सेप्ट समझाने के लिए छोटे डायग्राम और आसान जवाब हैं)। अगर कोई फोटो बनाने के बारे में पूछे, तो सही और ईमानदार बात बताओ।
+यदि सवाल पढ़ाई का है और उसमें गणित या गणना हो, तो पहले स्टेप-बाय-स्टेप पूरा हल और सही जवाब दो।
 Markdown के निशान (**, ##, ---, >) और LaTeX के \$ निशान बिल्कुल मत लिखो।
-सिर्फ़ इन 3 हिस्सों में छोटा जवाब दो:
 
-1. एक लाइन में मतलब: (एकदम सीधा और छोटा सार)
-2. घर-बाहर की मिसाल: (रोज़मर्रा की एक आसान और जानी-पहचानी मिसाल)
-3. दिमाग में बिठाने की बात: (सिर्फ़ एक छोटी और पक्की याद रखने वाली लाइन)
+पढ़ाई के सवाल का जवाब इन आसान हिस्सों में लिखो (ज़रूरत के हिसाब से पूरा और स्पष्ट रखो):
+1. सीधा और सही जवाब: (पूरी और सटीक बात / हल)
+2. घर-बाहर की मिसाल: (रोज़मर्रा की आसान मिसाल)
+3. दिमाग में बिठाने की बात: (मुख्य बात को याद रखने की लाइन)
 
 सवाल: $displayQ
 ''';
@@ -501,7 +540,7 @@ Markdown के निशान (**, ##, ---, >) और LaTeX के \$ नि�
     final prompt = '''
 बच्चा या बुजुर्ग इसे अभी भी पूरी तरह नहीं समझ पाया है।
 $langRule
-पहले बताए गए तरीकों को बिल्कुल मत दोहराओ। एक एकदम नई रोज़मर्रा की मिसाल और एक छोटी याद रखने वाली लाइन दो।
+यह ऐप केवल पढ़ाई के सवालों के लिए है। पहले बताए गए तरीकों को बिल्कुल मत दोहराओ। एक एकदम नई रोज़मर्रा की मिसाल और एक छोटी याद रखने वाली लाइन दो।
 Markdown के निशान (**, ##, ---, >) और LaTeX के \$ निशान बिल्कुल मत लिखो।
 
 सवाल: $_currentQuestion
@@ -546,7 +585,7 @@ $previousWays
     });
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('बढ़िया, सवाल सेव हो गया। अब अगला सवाल पूछो।')),
+      const SnackBar(content: Text('बढ़िया, सवाल सेव हो गया। अब अगला पढ़ाई का सवाल पूछो।')),
     );
   }
 
@@ -754,214 +793,221 @@ $previousWays
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        children: [
+          if (_pickedImageFile != null) ...[
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.file(
+                    _pickedImageFile!,
+                    height: 165,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.black54,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                      onPressed: _clearPickedImage,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 28),
+              child: Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 10),
+                    Text('पढ़ाई का जवाब तैयार हो रहा है...'),
+                  ],
+                ),
+              ),
+            )
+          else if (_currentAnswer != null)
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(
-                    controller: _questionController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'सवाल लिखें, बोलें या फ़ोटो खींचें / चुनें...',
-                      filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                    ),
-                  ),
-                  if (_pickedImageFile != null) ...[
-                    const SizedBox(height: 10),
-                    Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            _pickedImageFile!,
-                            height: 160,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: CircleAvatar(
-                            radius: 16,
-                            backgroundColor: Colors.black54,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                              onPressed: _clearPickedImage,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _isLoading ? null : () => _pickImage(ImageSource.camera),
-                          icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                          label: const Text('कैमरा'),
-                          style: OutlinedButton.styleFrom(
+                        child: Text(
+                          cleanDisplayText(_currentQuestion ?? ''),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15.5,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ),
+                      IconButton.filledTonal(
+                        icon: Icon(
+                          _isSpeaking ? Icons.stop_circle : Icons.volume_up,
+                        ),
+                        tooltip: _isSpeaking ? 'आवाज़ रोकें' : 'सुनें (0.30x)',
+                        onPressed: _toggleSpeak,
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Text(
+                    cleanDisplayText(_currentAnswer!),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ConceptVisualBox(question: _currentQuestion ?? ''),
+                  for (int i = 0; i < _extraMethods.length; i++) ...[
+                    const Divider(height: 20),
+                    Text(
+                      'और आसान तरीका #${i + 2}',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      cleanDisplayText(_extraMethods[i]),
+                      style: const TextStyle(fontSize: 15, height: 1.5),
+                    ),
+                  ],
+                  const Divider(height: 20),
+                  const Text(
+                    'समझ आया क्या?',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _isLoading ? null : _markUnderstoodAndNext,
+                          style: FilledButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
+                          child: const Text('हाँ, समझ आ गया'),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _isLoading ? null : () => _pickImage(ImageSource.gallery),
-                          icon: const Icon(Icons.photo_library_outlined, size: 18),
-                          label: const Text('गैलरी'),
+                        child: OutlinedButton(
+                          onPressed: _isLoading ? null : _addAnotherMethod,
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
+                          child: const Text('नहीं, और बताओ'),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filledTonal(
-                        onPressed: _isLoading ? null : _toggleListen,
-                        icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
-                        tooltip: _isListening ? 'रोकें' : 'बोलकर पूछें',
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  FilledButton(
-                    onPressed: _isLoading ? null : _solveQuestion,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: Text(
-                      _isLoading ? 'समझा रहा हूँ...' : 'समझाओ',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'सिर्फ़ पढ़ाई के सवाल पूछें',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'नीचे बार में सवाल लिखें, माइक से बोलें या + दबाकर कैमरा/गैलरी से फ़ोटो चुनें।',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
                   ),
                 ],
               ),
             ),
-            if (_currentAnswer != null) ...[
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: EdgeInsets.fromLTRB(
+            12,
+            8,
+            12,
+            MediaQuery.of(context).viewInsets.bottom > 0 ? 8 : 10,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF4F6F9),
+            border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: const Color(0xFFCBD5E1)),
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: _isLoading ? null : _openAttachSheet,
+                  icon: const Icon(Icons.add),
+                  tooltip: 'फ़ोटो जोड़ें',
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            cleanDisplayText(_currentQuestion ?? ''),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15.5,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                        ),
-                        IconButton.filledTonal(
-                          icon: Icon(
-                            _isSpeaking ? Icons.stop_circle : Icons.volume_up,
-                          ),
-                          tooltip: _isSpeaking ? 'आवाज़ रोकें' : 'सुनें (0.30x)',
-                          onPressed: _toggleSpeak,
-                        ),
-                      ],
+                Expanded(
+                  child: TextField(
+                    controller: _questionController,
+                    minLines: 1,
+                    maxLines: 3,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _isLoading ? null : _solveQuestion(),
+                    decoration: const InputDecoration(
+                      hintText: 'पढ़ाई का सवाल पूछें...',
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                     ),
-                    const Divider(height: 20),
-                    Text(
-                      cleanDisplayText(_currentAnswer!),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.5,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    ConceptVisualBox(question: _currentQuestion ?? ''),
-                    for (int i = 0; i < _extraMethods.length; i++) ...[
-                      const Divider(height: 20),
-                      Text(
-                        'और आसान तरीका #${i + 2}',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        cleanDisplayText(_extraMethods[i]),
-                        style: const TextStyle(fontSize: 15, height: 1.5),
-                      ),
-                    ],
-                    const Divider(height: 20),
-                    const Text(
-                      'समझ आया क्या?',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: _isLoading ? null : _markUnderstoodAndNext,
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('हाँ, समझ आ गया'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _isLoading ? null : _addAnotherMethod,
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('नहीं, और बताओ'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ],
+                IconButton(
+                  onPressed: _isLoading ? null : _toggleListen,
+                  icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+                  tooltip: _isListening ? 'रोकें' : 'बोलें',
+                ),
+                IconButton.filled(
+                  onPressed: _isLoading ? null : _solveQuestion,
+                  icon: const Icon(Icons.arrow_upward, size: 20),
+                  tooltip: 'समझाओ',
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
